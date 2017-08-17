@@ -1,12 +1,23 @@
 class ToDoItem extends React.Component {
   constructor(props) {
     super(props);
+
+    this.handleClick = this.handleClick.bind(this);
+  }
+
+  handleClick() {
+    this.props.deleteItem(this.props.id);
   }
 
   render() {
     return (
-      <li>{this.props.text}</li>
-    )
+      <li>
+        <div>{this.props.text}</div>
+        <div>
+          <button onClick={this.handleClick}>Delete</button>
+        </div>
+      </li>
+    );
   }
 }
 
@@ -15,45 +26,62 @@ class ToDoApp extends React.Component {
     super(props);
 
     this.state = {
-      todo: [
-        {
-          id: 1,
-          text: 'buy milk fam'
-        },
-        {
-          id: 2,
-          text: 'buy more milk fam'
-        },
-        {
-          id: 3,
-          text: 'buy even more milk fam'
-        },
-      ],
-      inputValue: '',
+      todo: [],
+      inputValue: ''
     }
-    this.handleSubmit = this.handleSubmit.bind(this);
+
     this.handleChange = this.handleChange.bind(this);
+    this.handleSubmit = this.handleSubmit.bind(this);
+    this.deleteItem = this.deleteItem.bind(this);
   }
 
-  handleSubmit(e) {
-    console.log('SUBMIT FAM', this.state.inputValue);
-    e.preventDefault();
+  getToDoItems() {
+    return fetch('http://localhost:8080/api/todos').then((response) => response.json()).then((todos) => {
+      return todos;
+    });
+  }
+
+  componentDidMount() {
+    this.getToDoItems().then((todos) => {
+      this.setState({todo: todos});
+    });
+  }
+
+  deleteItem(id) {
+    axios.delete(`http://localhost:8080/api/todos${id}`)
+    .then((response) => {
+      this.getToDoItems()
+      .then((todos) => {
+        this.setState({todo: todos, inputValue: ''});
+      });
+    }).catch(function(error) {
+      console.log(error);
+    });
   }
 
 
-  handleChange(e) {
-    console.log('CHANGING', e.target.value)
-    this.setState({
-      inputValue: e.target.value
+  handleChange(event) {
+    this.setState({inputValue: event.target.value});
+  }
+
+  handleSubmit(event) {
+    event.preventDefault();
+    axios.post("http://localhost:8080/api/todos", {text: this.state.inputValue}).then((response) => {
+      this.getToDoItems().then((todos) => {
+        this.setState({todo: todos, inputValue: ''});
+      });
+    }).catch(function(error) {
+      console.log(error);
     });
   }
 
   render() {
     const toDoItems = this.state.todo.map((item) => {
-      return (<ToDoItem key={item.id} text={item.text}/>);
+      return (<ToDoItem key={item.id} text={item.text} id={item.id} deleteItem={this.deleteItem}/>);
     });
+
     return (
-      <div>
+      <div className="app">
         <h1>To Do App</h1>
         <ul>
           {toDoItems}
@@ -69,14 +97,3 @@ class ToDoApp extends React.Component {
 
 ReactDOM.render(
   <ToDoApp/>, document.getElementById('root'));
-
-//   fetch('http://localhost:8080/api/todos')
-//   .then((response) => response.json())
-//   .then((todos) => {
-//     todosNode.innerHTML = todos
-//     .map((todo) => {
-//       return `<li>${todo.text}</li>`;
-//     })
-//     .join('\n');
-//   });
-// };

@@ -26,7 +26,6 @@ function deleteTodo(id) {
 }
 
 
-
 module.exports = Object.freeze({
   createTodo,
   readTodos,
